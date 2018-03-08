@@ -1,0 +1,34 @@
+---
+title: 'Intro To Git: Oil Spills'
+author: "Ian Ladner"
+date: "March 8, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r loading}
+
+library(tidyverse)
+library(sf)
+library(spatstat)
+library(tmap)
+library(leaflet)
+library(maptools)
+
+oil <- read_csv("data/oil_spills.csv")
+
+
+texas <- filter(oil, `Accident State` == "TX" & `Accident Year` < 2017) %>% 
+  group_by(`Accident Year`) %>% 
+  summarise(Loss = sum(`Net Loss (Barrels)`))
+
+colnames(texas)<- c("Year","Loss")
+
+
+ggplot(texas, aes(x = Year, y = Loss))+geom_col()+theme_classic()
+
+```
+
