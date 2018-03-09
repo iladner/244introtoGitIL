@@ -46,3 +46,88 @@ leaflet(oil_sf) %>%
   addMarkers()
 ```
 
+```{r tmap}
+
+states <- st_read(dsn = "data", layer = "states")
+
+tex_border <- states %>% 
+  filter(STATE_NAME == "Texas") %>% 
+  st_transform(4326)
+
+plot(tex_border)
+
+tm_shape(tex_border)+
+  tm_polygons()+
+  tm_shape(oil_sf)+
+  tm_dots(size = 0.7)
+
+```
+
+
+Point pattern analysis. R is finicky.
+
+```{r spatialAnalysis}
+
+spill_sp <- as(oil_sf, "Spatial")
+
+spill_ppp <- as(spill_sp, "ppp")
+
+#but what's our bounding window
+
+tx_sp <- as(tex_border, "Spatial")
+tx_owin <- as(tx_sp, "owin")
+
+
+#but outer window and points together
+all_ppp <- ppp(spill_ppp$x, spill_ppp$y, window = tx_owin)
+```
+
+
+##A density plot
+
+```{r}
+plot(density(all_ppp, sigma = 0.4))
+```
+
+
+
+```{r quadrantTest}
+
+
+#nx = number of horz subdivisions, ny = number of vert subdivisions
+#null hyp: CSR is demonstrated by data
+oil_qt <- quadrat.test(all_ppp, nx = 5, ny = 5)
+
+
+#What do these numbers mean? Ask Allison.
+plot(all_ppp)
+plot(oil_qt, add = TRUE, cex = 0.5)
+
+```
+
+G function for nearest neighbor analysis
+
+```{r Gfunction}
+
+r <- seq(0,1,0.1)
+
+oil_gFun <- envelope(all_ppp, fun = Gest, r = r, nsim = 100)
+
+
+ggplot(oil_gFun, aes(x = r, y = obs))+geom_line(color = "black")+geom_line(aes(x = r, y = theo),color = "red")
+```
+
+Nearest neighbor using the L (or K) function which looks at concentration of points on the whole
+
+```{r}
+
+lag2 <- seq(0,3,0.5)
+
+oil_lFun <- envelope(all_ppp, fun = Lest, r = lag2, nsim = 20, global = TRUE)
+
+
+ggplot(oil_lFun, aes(x = r, y = obs))+geom_line(color = "coral3")+geom_line(aes(x = r, y = theo), color = "darkgreen")
+
+#clustered
+```
+
